@@ -1,21 +1,69 @@
 #include <stdio.h>
-
 #include <SDL.h>
-#include <SDL_gfxPrimitives.h>
+
+#include "types.h"
 
 #define WIDTH 800
 #define HEIGHT 600
+#define BORDER 10
+
+#define PLAYER_WIDTH 42
+#define PLAYER_HEIGHT 30
+#define PLAYER_MOVE_INTERVAL 5
+#define PLAYER_Y_POS HEIGHT-PLAYER_HEIGHT-5
+
+void drawSprite(SDL_Surface *screen, SDL_Rect *rect, char *image)
+{
+    SDL_Surface *tmp;
+    SDL_Surface *pic;
+    
+    if ((tmp = SDL_LoadBMP(image)) == NULL) {
+        printf("Sprite konnte nicht geladen werden: %s\n", SDL_GetError());
+        exit(1);
+    }
+    
+    SDL_SetColorKey(tmp, SDL_SRCCOLORKEY, SDL_MapRGB(tmp->format, 0, 0, 0));
+    pic = SDL_DisplayFormat(tmp);
+    SDL_FreeSurface(tmp);
+    
+    SDL_BlitSurface(pic, NULL, screen, rect);
+}
+
+void movePlayer(Game *g, Direction direction)
+{
+    if (direction != NoMove) {
+        SDL_FillRect(g->screen, &g->player->rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+        g->player->rect.x += (direction == Left)?-PLAYER_MOVE_INTERVAL:PLAYER_MOVE_INTERVAL;
+        if (g->player->rect.x < BORDER) {
+            g->player->rect.x = BORDER;
+        }
+        if (g->player->rect.x > WIDTH-BORDER-PLAYER_WIDTH) {
+            g->player->rect.x = WIDTH-BORDER-PLAYER_WIDTH;
+        }
+    }
+    drawSprite(g->screen, &g->player->rect, "player.bmp");
+}
+
+void initGame(Game *g)
+{
+    g->player = (Player*) malloc(sizeof(Player));
+    
+    g->player->rect.x = BORDER;
+    g->player->rect.y = PLAYER_Y_POS;
+    g->player->rect.w = PLAYER_WIDTH;
+    g->player->rect.h = PLAYER_HEIGHT;
+    
+    movePlayer(g, NoMove);
+    
+    SDL_Flip(g->screen);
+}
 
 int main(int argc, char *argv[])
 {
-    SDL_Surface *screen;
-    SDL_Surface *tmp;
-    SDL_Surface *pic;
+    Game *g = (Game*) malloc(sizeof(Game));
     SDL_Event event;
-    SDL_Rect rect;
     Uint8 *keystates;
-    int quit = 0;
-    int movedist = 0;
+    Uint8 quit = false;
     
     // SDL initialisieren
     if (SDL_Init(SDL_INIT_VIDEO) == -1) {
@@ -25,29 +73,14 @@ int main(int argc, char *argv[])
     
     atexit(SDL_Quit);
     
-    screen = SDL_SetVideoMode(WIDTH, HEIGHT, 16, SDL_HWSURFACE);
+    g->screen = SDL_SetVideoMode(WIDTH, HEIGHT, 16, SDL_HWSURFACE);
     
-    if (screen == NULL) {
+    if (g->screen == NULL) {
         printf("Kann Video-Modus nicht festlegen: %s\n", SDL_GetError());
         exit(1);
     }
     
-    if ((tmp = SDL_LoadBMP("player.bmp")) == NULL) {
-        printf("Bild konnte nicht geladen werden: %s\n", SDL_GetError());
-        exit(1);
-    }
-    
-    SDL_SetColorKey(tmp, SDL_SRCCOLORKEY, SDL_MapRGB(tmp->format, 0, 0, 0));
-    pic = SDL_DisplayFormat(tmp);
-    SDL_FreeSurface (tmp);
-    
-    rect.x = 10;
-    rect.y = 550;
-    rect.w = 21;
-    rect.h = 15;
-    
-    SDL_BlitSurface(pic, NULL, screen, &rect);
-    SDL_UpdateRect(screen, rect.x, rect.y, rect.w, rect.h);
+    initGame(g);
     
     while (!quit) {
         SDL_PollEvent(&event);
@@ -56,27 +89,21 @@ int main(int argc, char *argv[])
         keystates = SDL_GetKeyState(NULL);
         
         if (keystates[SDLK_ESCAPE]) {
-            quit = 1;
+            quit = true;
         }
         
         // Nur wenn entweder Links oder Rechts, nicht beide zur selben Zeit
         if (keystates[SDLK_LEFT] != keystates[SDLK_RIGHT]) {
-            SDL_FillRect(screen, &rect, SDL_MapRGB(screen->format, 0, 0, 0));
-            
             // Links
             if (keystates[SDLK_LEFT]) {
-                rect.x -= 5;
+                movePlayer(g, Left);
             }
             // Rechts
             if (keystates[SDLK_RIGHT]) {
-                rect.x += 5;
+                movePlayer(g, Right);
             }
-            
-            rect.x += movedist;
-            
-            SDL_BlitSurface(pic, NULL, screen, &rect);
-            SDL_Flip(screen);
         }
+        SDL_Flip(g->screen);
     }
     
     SDL_Quit();
