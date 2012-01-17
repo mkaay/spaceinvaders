@@ -3,35 +3,50 @@
 
 #include <SDL.h>
 
-#define true 1
-#define false 0
+// Einstellungen Anfang
 
+// Spielfeld Dimension
 #define WIDTH 800
 #define HEIGHT 600
 #define BORDER 20
 
+// Spieler
 #define PLAYER_WIDTH 52
 #define PLAYER_HEIGHT 30
 #define PLAYER_MOVE_INTERVAL 5
-#define PLAYER_Y_POS HEIGHT-PLAYER_HEIGHT-BORDER
 
+// Aliens
 #define ENEMYFIELD_WIDTH 11
 #define ENEMYFIELD_HEIGHT 6
-#define ENEMY_COUNT ENEMYFIELD_WIDTH*ENEMYFIELD_HEIGHT
+#define ENEMY_MOVE_INTERVAL_HORIZONTAL 10
+#define ENEMY_MOVE_INTERVAL_VERTICAL 30
 
+// Alien Platzhalter
 #define FIELD_WIDTH 48
 #define FIELD_HEIGHT 36
-
 #define FIELD_MARGIN 5
 
+// Alien Dimension
 #define ALIEN1_WIDTH 32
-#define ALIEN1_HEIGHT 32
 #define ALIEN2_WIDTH 44
-#define ALIEN2_HEIGHT 32
 #define ALIEN3_WIDTH 48
+#define ALIEN1_HEIGHT 32
+#define ALIEN2_HEIGHT 32
 #define ALIEN3_HEIGHT 36
 #define UFO_WIDTH 64
 #define UFO_HEIGHT 28
+
+// Einstellungen Ende
+
+// Automatisch berechnet
+#define ENEMY_COUNT ENEMYFIELD_WIDTH*ENEMYFIELD_HEIGHT
+#define PLAYER_Y_POS HEIGHT-PLAYER_HEIGHT-BORDER
+
+// Konstanten
+#define true 1
+#define false 0
+
+// Structs
 
 typedef enum Direction {
     None,
