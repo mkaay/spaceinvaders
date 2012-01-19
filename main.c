@@ -6,6 +6,8 @@
 
 #include "types.h"
 
+//Marius ist der Hammer
+
 // Zeit in Millisekunden
 long ms_time()
 {
