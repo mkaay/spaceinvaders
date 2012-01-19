@@ -6,7 +6,8 @@
 
 #include "types.h"
 
-//Marius ist der Hammer
+// Marius ist der Hammer
+// Bernd weiß jetzt wie das geht!
 
 // Zeit in Millisekunden
 long ms_time()
