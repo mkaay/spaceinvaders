@@ -9,6 +9,7 @@
 #define WIDTH 800
 #define HEIGHT 600
 #define BORDER 20
+#define BORDER_TOP 50
 
 // Spieler
 #define PLAYER_WIDTH 52
@@ -36,6 +37,14 @@
 #define UFO_WIDTH 64
 #define UFO_HEIGHT 28
 
+//Schüsse
+#define PLAYER_SHOT_SPEED 8
+#define PLAYER_SHOT_WIDTH 8
+#define PLAYER_SHOT_HEIGHT 16
+#define ALIEN_1_SHOT_SPEED 5
+#define ALIEN_2_SHOT_SPEED 8
+#define ALIEN_3_SHOT_SPEED 10
+
 // Einstellungen Ende
 
 // Automatisch berechnet
@@ -59,6 +68,7 @@ typedef enum Direction {
 typedef struct Shot {
     int posx;
     int posy;
+    int type;
     struct Shot *next;
 } Shot;
 

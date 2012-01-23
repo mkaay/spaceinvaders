@@ -1,18 +1,16 @@
 CC = gcc
- 
-OS := $(shell uname)
-ifeq ($(OS),Darwin)
-	CFLAGS = -std=c99 -Wall -Wextra -pedantic -D_GNU_SOURCE=1 -D_THREAD_SAFE -Wl,-framework,Cocoa -g
-	INCLUDE = -I/usr/local/include/SDL
-	LDFLAGS = -L/usr/local/lib -lSDLmain -lSDL -lSDL_gfx
-else
-	CFLAGS = -std=c99 -Wall -Wextra -pedantic -D_GNU_SOURCE=1 -D_REENTRANT -g
-	INCLUDE = -I/usr/include/SDL
-	LDFLAGS = -L/usr/lib -lSDL -lSDL_gfx
-endif
 
-main: main.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o spaceinvaders main.o
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -g $(shell sdl-config --cflags)
+LDFLAGS = $(shell sdl-config --libs) -lSDL_gfx -lSDL_ttf
+
+main: helpers.o game.o main.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o spaceinvaders helpers.o game.o main.o
 
 main.o: main.c
-	$(CC) $(CFLAGS) $(INCLUDE) -c main.c
+	$(CC) $(CFLAGS) -c main.c
+
+helpers.o: helpers.c
+	$(CC) $(CFLAGS) -c helpers.c
+
+game.o: game.c
+	$(CC) $(CFLAGS) -c game.c
