@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
     startNewLevel(g);
     updateScore(g);
     updateLives(g);
+    showHighscore(g);
     updateBlocks(g);
     
     // Nächster Grafikzustand

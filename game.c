@@ -1,6 +1,7 @@
 #include "game.h"
 #include "helpers.h"
 #include "menu.h"
+#include "highscore.h"
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -299,10 +300,6 @@ void playerDead(Game *g)
         g->player.shot = NULL;
     }
     
-    if (g->player.lives == 0) {
-        // TODO: Game over
-    }
-    
     g->player.lives -= 2; // startNewLevel erhöht um 1
     g->level--;
     g->enemyContainer.ufo.alive = false;
@@ -317,8 +314,29 @@ void playerDead(Game *g)
     SDL_Rect area = {0, BORDER_TOP, WIDTH, HEIGHT - BORDER_TOP};
     SDL_FillRect(g->screen, &area, SDL_MapRGB(g->screen->format, 0, 0, 0));
     
+    if (g->player.lives+2 == 0) {
+        free(g->blocks);
+        
+        showGameOver(g);
+        saveHighscore(g->score);
+        showHighscore(g);
+        
+        SDL_Flip(g->screen);
+        
+        // Warten auf Tastendruck
+        SDL_Event e;
+        SDL_WaitEvent(&e);
+        
+        SDL_FillRect(g->screen, &area, SDL_MapRGB(g->screen->format, 0, 0, 0));
+        
+        initGame(g);
+        startNewLevel(g);
+        
+        return;
+    }
+    
     SDL_Flip(g->screen);
-    usleep(500000);
+    usleep(100000);
     
     // Nur zeichen, daher None
     movePlayer(g, None);
