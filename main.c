@@ -6,6 +6,7 @@
 
 #include "game.h"
 #include "helpers.h"
+#include "menu.h"
 #include "types.h"
 
 int main(int argc, char *argv[])
@@ -33,18 +34,14 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    /* Text Test
     TTF_Init();
-    TTF_Font *font = TTF_OpenFont("font.ttf", 12);
-    SDL_Color color = { 255, 255, 0 }; //rot grün blau
-    SDL_Surface *text = TTF_RenderText_Solid(font, "Das ist ein Text", color);
-    SDL_Rect rect = {400,500,0,0};//text position
-    SDL_BlitSurface(text,NULL,g->screen,&rect);
-     */
+    
     
     // Game initialisieren
     initGame(g);
     startNewLevel(g);
+    updateScore(g);
+    updateLives(g);
     
     // Nächster Grafikzustand
     SDL_Flip(g->screen);

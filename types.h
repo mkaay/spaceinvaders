@@ -7,7 +7,7 @@
 
 // Spielfeld Dimension
 #define WIDTH 800
-#define HEIGHT 600
+#define HEIGHT 700
 #define BORDER 20
 #define BORDER_TOP 50
 
@@ -38,7 +38,7 @@
 #define UFO_HEIGHT 28
 
 //Schüsse
-#define PLAYER_SHOT_SPEED 8
+#define PLAYER_SHOT_SPEED 20
 #define PLAYER_SHOT_WIDTH 8
 #define PLAYER_SHOT_HEIGHT 16
 #define ALIEN_1_SHOT_SPEED 5
@@ -74,8 +74,7 @@ typedef struct Shot {
 
 typedef struct Player {
     SDL_Rect rect;
-    int lifes;
-    int scores;
+    int lives;
     Shot *shot;
 } Player;
 
@@ -105,6 +104,7 @@ typedef struct Game {
     EnemyContainer enemyContainer;
     Shot *enemyShots;
     int level;
+    int score;
 } Game;
 
 #endif

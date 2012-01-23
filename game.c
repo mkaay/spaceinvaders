@@ -1,5 +1,7 @@
 #include "game.h"
 #include "helpers.h"
+#include "menu.h"
+
 #include <unistd.h>
 
 // Spieler bewegen
@@ -186,8 +188,10 @@ void moveEnemys(Game *g)
 void initGame(Game *g)
 {
     g->level = 0;
+    g->score = 0;
     g->enemyShots = NULL;
     g->player.shot = NULL;
+    g->player.lives = 2;
     
     // Spielerposition
     g->player.rect.x = WIDTH/2 - PLAYER_WIDTH/2;
@@ -202,6 +206,7 @@ void initGame(Game *g)
 void startNewLevel(Game *g)
 {
     g->level++;
+    g->player.lives++;
     
     // Erste Reihe: Typ 1
     for (int x = 0; x < ENEMYFIELD_WIDTH; x++) {
@@ -230,7 +235,7 @@ void startNewLevel(Game *g)
     
     // Alien Box Positionieren
     g->enemyContainer.posx = BORDER;
-    g->enemyContainer.posy = BORDER_TOP;
+    g->enemyContainer.posy = BORDER_TOP + 50;
     g->enemyContainer.aliveCount = ENEMY_COUNT;
     g->enemyContainer.moveDirection = Right;
     
@@ -270,6 +275,15 @@ int killEnemy(Game *g, int x, int y)
         if (g->enemyContainer.aliveCount == 0) {
             startNewLevel(g);
         }
+        
+        if (g->enemyContainer.enemys[x][y].type == 3) {
+            g->score += 10;
+        } else if (g->enemyContainer.enemys[x][y].type == 2) {
+            g->score += 20;
+        } else if (g->enemyContainer.enemys[x][y].type == 1) {
+            g->score += 40;
+        }
+        updateScore(g);
         
         return true;
     } else {
@@ -325,7 +339,7 @@ void updateShots(Game *g)
         SDL_FillRect(g->screen, &rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
         
         g->player.shot->posy -= PLAYER_SHOT_SPEED;
-        if (g->player.shot->posy < BORDER) {
+        if (g->player.shot->posy < BORDER_TOP) {
             free(g->player.shot);
             g->player.shot = NULL;
             return;
