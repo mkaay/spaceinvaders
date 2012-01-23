@@ -1,5 +1,83 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+struct bestenliste 
+{
+       char name[10];
+       int zeit;
+       };
+
+Highscore(int time)
+{
+        // variablen
+    char name[10];
+    struct bestenliste *daten;
+    daten=(struct bestenliste*)malloc(11*sizeof(struct bestenliste));
+    FILE *datei;
+    int i,j;
+
+   
+    system("cls");
+    printf("\n bitte Name eingeben : ");
+    scanf("%s",&name);
+        
+    datei = fopen("bestenliste.txt", "r");
+    for(i=0;i<10;i++)
+    {
+        fread(&daten[i],sizeof(struct bestenliste),1,datei);
+    }
+    fclose(datei);
+    
+ 
+    for(i=0;i<10;i++)
+    {
+        if (time > daten[i].zeit) 
+        {
+        break;
+        }
+    }
+  /*  
+    for(j=9;j>=i;j--)
+    {
+        daten[j+1]=daten[j];
+    }
+   */
+    strcpy (daten[i].name,name);
+    daten[i].zeit=time;
+    
+   
+    datei = fopen("bestenliste.txt", "w");	
+    
+   for(i=0;i<10;i++)
+    {
+        fwrite(&daten[i],sizeof(struct bestenliste),1,datei);
+    }
+    
+    for(i=10; i>0; i--)
+    {
+        printf("\n %s : %d",daten[i].name,daten[i].zeit);
+    }
+    fclose(datei);
+
+    }
+
+int main()
+{
+   Highscore(1); 
+    
+    
+  system("PAUSE");	
+  return 0;
+}
+
+
+
+
+
+
+/*#include <stdio.h>
+#include <stdlib.h>
 
 
 
