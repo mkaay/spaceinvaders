@@ -45,6 +45,11 @@
 #define ALIEN_2_SHOT_SPEED 8
 #define ALIEN_3_SHOT_SPEED 10
 
+// Punkte
+#define ALIEN_1_POINTS 40
+#define ALIEN_2_POINTS 20
+#define ALIEN_3_POINTS 10
+
 // Einstellungen Ende
 
 // Automatisch berechnet

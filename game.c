@@ -28,13 +28,16 @@ void movePlayer(Game *g, Direction direction)
     drawSprite(g->screen, &g->player.rect, "player.bmp");
 }
 
-
+// Abfrage ob Aliens am unteren Spielfeldrand angekommen sind
 int enemysLanded(Game *g)
 {
+    // Box angekommen?
     if (g->enemyContainer.posy + (ENEMYFIELD_HEIGHT * FIELD_HEIGHT) + (ENEMYFIELD_HEIGHT * FIELD_MARGIN * 2) < PLAYER_Y_POS) {
+        // Nicht
         return false;
     } else {
         int aliverow = -1;
+        // Welches ist die unterste Reihe in der noch min. 1 Alien lebt
         for (int y = ENEMYFIELD_HEIGHT-1; y >= 0; y--) {
             for (int x = 0; x < ENEMYFIELD_WIDTH; x++) {
                 if (!g->enemyContainer.enemys[x][y].dead) {
@@ -43,10 +46,12 @@ int enemysLanded(Game *g)
             }
         }
         
+        // Alle tot (sollte nicht passieren, trotzdem false zurückgeben)
         if (aliverow == -1) {
             return false;
         }
         
+        // Letzte Reihe unten?
         if (g->enemyContainer.posy + (aliverow * FIELD_HEIGHT) + (aliverow * FIELD_MARGIN * 2) < PLAYER_Y_POS) {
             return false;
         } else {
@@ -95,7 +100,7 @@ void moveEnemys(Game *g)
             dx = (g->enemyContainer.posx <= BORDER) ? ENEMY_MOVE_INTERVAL_HORIZONTAL : -ENEMY_MOVE_INTERVAL_HORIZONTAL;
         } else {
             // Unten angekommen
-            // TODO: Game over
+            // TODO: Leben abziehen
         }
     }
     
@@ -184,14 +189,16 @@ void moveEnemys(Game *g)
     }
 }
 
+
 // Game Struct initialisieren
 void initGame(Game *g)
 {
+    // Startwerte
     g->level = 0;
     g->score = 0;
     g->enemyShots = NULL;
     g->player.shot = NULL;
-    g->player.lives = 2;
+    g->player.lives = 2; // Nur 2, weil danach startNewLevel aufgerufen wird (-> ein Leben mehr)
     
     // Spielerposition
     g->player.rect.x = WIDTH/2 - PLAYER_WIDTH/2;
@@ -203,6 +210,8 @@ void initGame(Game *g)
     movePlayer(g, None);
 }
 
+
+// Neues Level starten
 void startNewLevel(Game *g)
 {
     g->level++;
@@ -243,6 +252,8 @@ void startNewLevel(Game *g)
     moveEnemys(g);
 }
 
+
+// 'Versuchen' Alien zu töten (wenn schon tot, false zurückgeben)
 int killEnemy(Game *g, int x, int y)
 {
     if (!g->enemyContainer.enemys[x][y].dead) {
@@ -259,31 +270,42 @@ int killEnemy(Game *g, int x, int y)
         e_rect.w = FIELD_WIDTH;
         e_rect.h = FIELD_HEIGHT;
         
+        // Überscheiden die Umrisse sich?
         if (!collides(p_rect, e_rect)) {
             return false;
         }
         
+        // Schuss überschreiben
         SDL_FillRect(g->screen, &p_rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
         
+        // Speicher freimachen
         free(g->player.shot);
+        // Pointer auf NULL setzen
         g->player.shot = NULL;
+        // Alien tot
         g->enemyContainer.enemys[x][y].dead = true;
         
+        // Alien löschen
         SDL_FillRect(g->screen, &e_rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
         
+        // Zähler dekrementieren
         g->enemyContainer.aliveCount--;
+        
+        // Punkte gutschreiben
+        if (g->enemyContainer.enemys[x][y].type == 3) {
+            g->score += ALIEN_3_POINTS;
+        } else if (g->enemyContainer.enemys[x][y].type == 2) {
+            g->score += ALIEN_2_POINTS;
+        } else if (g->enemyContainer.enemys[x][y].type == 1) {
+            g->score += ALIEN_1_POINTS;
+        }
+        // Anzeigen
+        updateScore(g);
+        
+        // Alle tot -> neues Level
         if (g->enemyContainer.aliveCount == 0) {
             startNewLevel(g);
         }
-        
-        if (g->enemyContainer.enemys[x][y].type == 3) {
-            g->score += 10;
-        } else if (g->enemyContainer.enemys[x][y].type == 2) {
-            g->score += 20;
-        } else if (g->enemyContainer.enemys[x][y].type == 1) {
-            g->score += 40;
-        }
-        updateScore(g);
         
         return true;
     } else {
@@ -291,10 +313,13 @@ int killEnemy(Game *g, int x, int y)
     }
 }
 
+
+// Kollisionen auf dem Spielfeld überprüfen
 void checkCollision(Game *g)
 {
     if (g->player.shot != NULL) {
         if (g->enemyContainer.posx < g->player.shot->posx && g->enemyContainer.posy < g->player.shot->posy) {
+            // Überlappende Felder in der Alienbox berechnen
             int dx = g->player.shot->posx - g->enemyContainer.posx + FIELD_MARGIN;
             int dy = g->player.shot->posy - g->enemyContainer.posy + FIELD_MARGIN;
             
@@ -303,6 +328,7 @@ void checkCollision(Game *g)
             int x2 = (dx + PLAYER_SHOT_WIDTH) / (FIELD_WIDTH + 2*FIELD_MARGIN);
             int y2 = (dy + PLAYER_SHOT_HEIGHT) / (FIELD_HEIGHT + 2*FIELD_MARGIN);
             
+            // Felder durchgehen
             if (x1 < ENEMYFIELD_WIDTH && y1 < ENEMYFIELD_HEIGHT) {
                 if (killEnemy(g, x1, y1)) {
                     return;
@@ -327,28 +353,38 @@ void checkCollision(Game *g)
     }
 }
 
+
+// Schüsse bewegen
 void updateShots(Game *g)
 {
     if (g->player.shot != NULL) {
+        // Spieler Schuss
+        
+        // Umriss setzen
         SDL_Rect rect;
         rect.x = g->player.shot->posx;
         rect.y = g->player.shot->posy;
         rect.w = PLAYER_SHOT_WIDTH;
         rect.h = PLAYER_SHOT_HEIGHT;
         
+        // Überschreiben
         SDL_FillRect(g->screen, &rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
         
+        // Neue Position
         g->player.shot->posy -= PLAYER_SHOT_SPEED;
         if (g->player.shot->posy < BORDER_TOP) {
+            // Oben angekommen
             free(g->player.shot);
             g->player.shot = NULL;
             return;
         }
         rect.y = g->player.shot->posy;
         
+        // Zeichen
         drawSprite(g->screen, &rect, "player_shot.bmp");
     }
     
+    // TODO
     Shot *s = g->enemyShots;
     while (s != NULL) {
         if (s->type == 1) {
@@ -362,10 +398,15 @@ void updateShots(Game *g)
     }
 }
 
+
+// Leertaste gedrückt -> Schussversuch
 void shoot(Game *g)
 {
+    // Aktiver Schuss?
     if (g->player.shot == NULL) {
+        // Speicher belegen
         g->player.shot = malloc(sizeof(Shot));
+        // Initialisieren
         g->player.shot->type = 0;
         g->player.shot->next = NULL;
         g->player.shot->posy = g->player.rect.y;

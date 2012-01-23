@@ -3,6 +3,8 @@
 
 #include <SDL_ttf.h>
 
+
+// Spielstand anzeigen
 void updateScore(Game *g)
 {
     char score_fmt[50];
@@ -15,6 +17,8 @@ void updateScore(Game *g)
     SDL_BlitSurface(text, NULL, g->screen, &rect);
 }
 
+
+// Leben anzeigen
 void updateLives(Game *g)
 {
     char lives_fmt[50];
