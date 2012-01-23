@@ -21,6 +21,7 @@
 #define ENEMYFIELD_HEIGHT 6
 #define ENEMY_MOVE_INTERVAL_HORIZONTAL 10
 #define ENEMY_MOVE_INTERVAL_VERTICAL 30
+#define UFO_SPEED 10
 
 // Alien Platzhalter
 #define FIELD_WIDTH 48
@@ -37,18 +38,34 @@
 #define UFO_WIDTH 64
 #define UFO_HEIGHT 28
 
-//Schüsse
+// Schüsse Gewschindigkeit
 #define PLAYER_SHOT_SPEED 20
+#define ALIEN_1_SHOT_SPEED 9
+#define ALIEN_2_SHOT_SPEED 6
+#define ALIEN_3_SHOT_SPEED 3
+
+// Schüsse Dimensionen
 #define PLAYER_SHOT_WIDTH 8
 #define PLAYER_SHOT_HEIGHT 16
-#define ALIEN_1_SHOT_SPEED 5
-#define ALIEN_2_SHOT_SPEED 8
-#define ALIEN_3_SHOT_SPEED 10
+#define ALIEN_1_SHOT_WIDTH 14
+#define ALIEN_2_SHOT_WIDTH 12
+#define ALIEN_3_SHOT_WIDTH 12
+#define ALIEN_1_SHOT_HEIGHT 24
+#define ALIEN_2_SHOT_HEIGHT 24
+#define ALIEN_3_SHOT_HEIGHT 24
 
 // Punkte
 #define ALIEN_1_POINTS 40
 #define ALIEN_2_POINTS 20
 #define ALIEN_3_POINTS 10
+
+// Zeiten
+#define ENEMY_UPDATE_BASE 1000
+#define SHOT_UPDATE 20
+#define UFO_UPDATE 50
+#define MIN_UFO_PAUSE 15000
+
+#define MAX_BLOCK_DAMAGE 4
 
 // Einstellungen Ende
 
@@ -75,7 +92,14 @@ typedef struct Shot {
     int posy;
     int type;
     struct Shot *next;
+    struct Shot *prev;
 } Shot;
+
+typedef struct Block {
+    int damage[4][3];
+    int posx[4][3];
+    int posy[4][3];
+} Block;
 
 typedef struct Player {
     SDL_Rect rect;
@@ -86,6 +110,7 @@ typedef struct Player {
 typedef struct Ufo {
     int posx;
     int alive;
+    long lastufo;
 } Ufo;
 
 typedef struct Enemy {
@@ -110,6 +135,7 @@ typedef struct Game {
     Shot *enemyShots;
     int level;
     int score;
+    Block *blocks;
 } Game;
 
 #endif

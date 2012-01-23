@@ -15,6 +15,7 @@ void updateScore(Game *g)
     SDL_Rect rect = {WIDTH/3, 14, 200, 20};
     SDL_FillRect(g->screen, &rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
     SDL_BlitSurface(text, NULL, g->screen, &rect);
+    SDL_FreeSurface(text);
 }
 
 
@@ -29,6 +30,7 @@ void updateLives(Game *g)
     SDL_Rect rect = {BORDER, 14, 100, 20};
     SDL_FillRect(g->screen, &rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
     SDL_BlitSurface(text, NULL, g->screen, &rect);
+    SDL_FreeSurface(text);
     
     rect.x = 100 + 2*BORDER;
     rect.y = 4;

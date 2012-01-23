@@ -1,7 +1,6 @@
 #include <sys/time.h>
 
 #include "helpers.h"
-#include "types.h"
 
 // Zeit in Millisekunden
 long ms_time()
@@ -43,4 +42,12 @@ int collides(SDL_Rect a, SDL_Rect b)
     } else {
         return false;
     }
+}
+
+void freeShotList(Shot *s)
+{
+    if (s->next != NULL) {
+        freeShotList(s->next);
+    }
+    free(s);
 }

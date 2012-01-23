@@ -18,6 +18,7 @@ int main(int argc, char *argv[])
     long lastplayerupdate = ms_time();
     long lastenemyupdate = ms_time();
     long lastshotupdate = ms_time();
+    long lastufoupdate = ms_time();
     
     // SDL initialisieren
     if (SDL_Init(SDL_INIT_VIDEO) == -1) {
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
     startNewLevel(g);
     updateScore(g);
     updateLives(g);
+    updateBlocks(g);
     
     // Nächster Grafikzustand
     SDL_Flip(g->screen);
@@ -78,21 +80,29 @@ int main(int argc, char *argv[])
             shoot(g);
         }
         
+        // UFO
+        if (ms_time() - lastufoupdate >= UFO_UPDATE) {
+            lastufoupdate = ms_time();
+            ufo(g);
+        }
+        
         // Alienposition aktualisieren?
         // Exponentialfunktion, die Level und Alienanzahl berücksichtigt
-        if (ms_time() - lastenemyupdate >= 1000 * pow(0.95, g->level * 3 + (ENEMY_COUNT - g->enemyContainer.aliveCount) / 4)) {
+        if (ms_time() - lastenemyupdate >= ENEMY_UPDATE_BASE * pow(0.95, g->level * 3 + (ENEMY_COUNT - g->enemyContainer.aliveCount) / 4)) {
             lastenemyupdate = ms_time();
             moveEnemys(g);
+            alienShot(g);
         }
         
         // Schüsse aktualisieren
-        if (ms_time() - lastshotupdate >= 20) {
+        if (ms_time() - lastshotupdate >= SHOT_UPDATE) {
             lastshotupdate = ms_time();
             updateShots(g);
             checkCollision(g);
             movePlayer(g, None);
         }
         
+        usleep(20000); // begrenzt CPU Last
         // Nächster Grafikzustand
         SDL_Flip(g->screen);
     }

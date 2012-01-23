@@ -3,6 +3,7 @@
 #include "menu.h"
 
 #include <unistd.h>
+#include <stdlib.h>
 
 // Spieler bewegen
 void movePlayer(Game *g, Direction direction)
@@ -100,7 +101,7 @@ void moveEnemys(Game *g)
             dx = (g->enemyContainer.posx <= BORDER) ? ENEMY_MOVE_INTERVAL_HORIZONTAL : -ENEMY_MOVE_INTERVAL_HORIZONTAL;
         } else {
             // Unten angekommen
-            // TODO: Leben abziehen
+            playerDead(g);
         }
     }
     
@@ -190,6 +191,69 @@ void moveEnemys(Game *g)
 }
 
 
+// Alien Schuss erstellen
+void alienShot(Game *g)
+{
+    // nicht jedesmal
+    if (rand() % 2) {
+        return;
+    }
+    
+    Enemy *e;
+    int ex;
+    int ey;
+    
+    // Zufälliges Alien auf unterster Stufe
+    do {
+        e = NULL;
+        ex = rand() % ENEMYFIELD_WIDTH;
+        ey = -1;
+        
+        for (int y = ENEMYFIELD_HEIGHT-1; y >= 0; y--) {
+            e = &g->enemyContainer.enemys[ex][y];
+            if (!e->dead) {
+                ey = y;
+                break;
+            }
+        }
+    } while (ey == -1);
+    
+    // noch ein Alien da
+    if (e != NULL) {
+        // Position berechen
+        Shot *s = (Shot*) malloc(sizeof(Shot));
+        s->posx = g->enemyContainer.posx + (ex * FIELD_WIDTH) + (ex * FIELD_MARGIN * 2) - FIELD_MARGIN + FIELD_WIDTH/2;
+        s->posy = g->enemyContainer.posy + (ey * FIELD_HEIGHT) + (ey * FIELD_MARGIN * 2) - FIELD_MARGIN + FIELD_HEIGHT;
+        s->type = e->type;
+        s->next = NULL;
+        s->prev = NULL;
+        
+        if (e->type == 1) {
+            s->posx -= ALIEN_1_SHOT_WIDTH/2;
+        } else if (e->type == 2) {
+            s->posx -= ALIEN_2_SHOT_WIDTH/2;
+        } else if (e->type == 3) {
+            s->posx -= ALIEN_3_SHOT_WIDTH/2;
+        }
+        
+        // Zur Liste hinzufügen
+        if (g->enemyShots == NULL) {
+            g->enemyShots = s;
+        } else {
+            Shot *tmp = g->enemyShots;
+            for (;;) {
+                if (tmp->next == NULL) {
+                    tmp->next = s;
+                    s->prev = tmp;
+                    break;
+                }
+                tmp = tmp->next;
+            }
+        }
+    }
+}
+
+
 // Game Struct initialisieren
 void initGame(Game *g)
 {
@@ -199,6 +263,9 @@ void initGame(Game *g)
     g->enemyShots = NULL;
     g->player.shot = NULL;
     g->player.lives = 2; // Nur 2, weil danach startNewLevel aufgerufen wird (-> ein Leben mehr)
+    g->enemyContainer.ufo.alive = false;
+    g->enemyContainer.ufo.posx = 0;
+    g->enemyContainer.ufo.lastufo = ms_time();
     
     // Spielerposition
     g->player.rect.x = WIDTH/2 - PLAYER_WIDTH/2;
@@ -206,8 +273,57 @@ void initGame(Game *g)
     g->player.rect.w = PLAYER_WIDTH;
     g->player.rect.h = PLAYER_HEIGHT;
     
+    g->blocks = malloc(sizeof(Block) * 4);
+    for (int i = 0; i < 4; i++) {
+        for (int x = 0; x < 4; x++) {
+            for (int y = 0; y < 3; y++) {
+                g->blocks[i].damage[x][y] = 0;
+                g->blocks[i].posx[x][y] = WIDTH/4 * i - 40 + x*20 + WIDTH/8;
+                g->blocks[i].posy[x][y] = PLAYER_Y_POS - 100 + y*20;
+            }
+        }
+    }
+    
     // Nur zeichen, daher None
     movePlayer(g, None);
+}
+
+
+// Leben verloren
+void playerDead(Game *g)
+{
+    freeShotList(g->enemyShots);
+    g->enemyShots = NULL;
+    if (g->player.shot != NULL) {
+        free(g->player.shot);
+        g->player.shot = NULL;
+    }
+    
+    if (g->player.lives == 0) {
+        // TODO: Game over
+    }
+    
+    g->player.lives -= 2; // startNewLevel erhöht um 1
+    g->level--;
+    g->enemyContainer.ufo.alive = false;
+    g->enemyContainer.ufo.lastufo = ms_time();
+    
+    // Spielerposition
+    g->player.rect.x = WIDTH/2 - PLAYER_WIDTH/2;
+    g->player.rect.y = PLAYER_Y_POS;
+    g->player.rect.w = PLAYER_WIDTH;
+    g->player.rect.h = PLAYER_HEIGHT;
+    
+    SDL_Rect area = {0, BORDER_TOP, WIDTH, HEIGHT - BORDER_TOP};
+    SDL_FillRect(g->screen, &area, SDL_MapRGB(g->screen->format, 0, 0, 0));
+    
+    SDL_Flip(g->screen);
+    usleep(500000);
+    
+    // Nur zeichen, daher None
+    movePlayer(g, None);
+    
+    startNewLevel(g);
 }
 
 
@@ -216,6 +332,8 @@ void startNewLevel(Game *g)
 {
     g->level++;
     g->player.lives++;
+    
+    updateLives(g);
     
     // Erste Reihe: Typ 1
     for (int x = 0; x < ENEMYFIELD_WIDTH; x++) {
@@ -248,6 +366,9 @@ void startNewLevel(Game *g)
     g->enemyContainer.aliveCount = ENEMY_COUNT;
     g->enemyContainer.moveDirection = Right;
     
+    SDL_Flip(g->screen);
+    usleep(500000);
+    
     // Box Zeichnen
     moveEnemys(g);
 }
@@ -257,13 +378,8 @@ void startNewLevel(Game *g)
 int killEnemy(Game *g, int x, int y)
 {
     if (!g->enemyContainer.enemys[x][y].dead) {
-        SDL_Rect p_rect;
+        SDL_Rect p_rect = {g->player.shot->posx, g->player.shot->posy, PLAYER_SHOT_WIDTH, PLAYER_SHOT_HEIGHT};
         SDL_Rect e_rect;
-        
-        p_rect.x = g->player.shot->posx;
-        p_rect.y = g->player.shot->posy;
-        p_rect.w = PLAYER_SHOT_WIDTH;
-        p_rect.h = PLAYER_SHOT_HEIGHT;
         
         e_rect.x = g->enemyContainer.posx + (x * FIELD_WIDTH) + (x * FIELD_MARGIN * 2) - FIELD_MARGIN;
         e_rect.y = g->enemyContainer.posy + (y * FIELD_HEIGHT) + (y * FIELD_MARGIN * 2) - FIELD_MARGIN;
@@ -350,18 +466,118 @@ void checkCollision(Game *g)
                 }
             }
         }
+        
+        SDL_Rect p_rect = {g->player.shot->posx, g->player.shot->posy, PLAYER_SHOT_WIDTH, PLAYER_SHOT_HEIGHT};
+        
+        // UFO Kollision abfragen
+        if (g->enemyContainer.ufo.alive) {
+            SDL_Rect ufo_rect = {g->enemyContainer.ufo.posx, BORDER_TOP + 5, UFO_WIDTH, UFO_HEIGHT};
+            if (collides(ufo_rect, p_rect)) {
+                g->score += ((rand() % 12)+1) * 25;
+                g->enemyContainer.ufo.alive = false;
+                SDL_FillRect(g->screen, &p_rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+                SDL_FillRect(g->screen, &ufo_rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+                updateScore(g);
+                free(g->player.shot);
+                g->player.shot = NULL;
+            }
+        }
+        
+        
+        SDL_Rect rect;
+        rect.h = 20;
+        rect.w = 20;
+        
+        for (int i = 0; i < 4; i++) {
+            for (int x = 0; x < 4; x++) {
+                for (int y = 0; y < 3; y++) {
+                    rect.x = g->blocks[i].posx[x][y];
+                    rect.y = g->blocks[i].posy[x][y];
+                    
+                    if (collides(rect, p_rect) && g->blocks[i].damage[x][y] < MAX_BLOCK_DAMAGE) {
+                        g->blocks[i].damage[x][y]++;
+                        SDL_FillRect(g->screen, &p_rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+                        free(g->player.shot);
+                        g->player.shot = NULL;
+                    }
+                }
+            }
+        }
+        
     }
+    
+    SDL_Rect s_rect;
+    Shot *s = g->enemyShots;
+    while (s != NULL) {
+        s_rect.x = s->posx;
+        s_rect.y = s->posy;
+        
+        if (s->type == 1) {
+            s_rect.w = ALIEN_1_SHOT_WIDTH;
+            s_rect.h = ALIEN_1_SHOT_HEIGHT;
+        } else if (s->type == 2) {
+            s_rect.w = ALIEN_2_SHOT_WIDTH;
+            s_rect.h = ALIEN_2_SHOT_HEIGHT;
+        } else if (s->type == 3) {
+            s_rect.w = ALIEN_3_SHOT_WIDTH;
+            s_rect.h = ALIEN_3_SHOT_HEIGHT;
+        }
+        
+        if (collides(s_rect, g->player.rect)) {
+            playerDead(g);
+            break;
+        }
+        
+        SDL_Rect rect;
+        rect.h = 20;
+        rect.w = 20;
+        
+        for (int i = 0; i < 4; i++) {
+            for (int x = 0; x < 4; x++) {
+                for (int y = 0; y < 3; y++) {
+                    rect.x = g->blocks[i].posx[x][y];
+                    rect.y = g->blocks[i].posy[x][y];
+                    
+                    if (collides(rect, s_rect) && g->blocks[i].damage[x][y] < MAX_BLOCK_DAMAGE) {
+                        g->blocks[i].damage[x][y]++;
+                        SDL_FillRect(g->screen, &s_rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+                        
+                        Shot *tmp = s;
+                        if (s->prev == NULL) {
+                            g->enemyShots = s->next;
+                        } else {
+                            s->prev->next = s->next;
+                        }
+                        if (s->next != NULL) {
+                            s->next->prev = s->prev;
+                        }
+                        s = s->next;
+                        free(tmp);
+                        goto block_loop_break;
+                    }
+                }
+            }
+        }
+        
+        s = s->next;
+        
+        block_loop_break:
+        continue;
+    }
+    
+    updateBlocks(g);
 }
 
 
 // Schüsse bewegen
 void updateShots(Game *g)
 {
+    SDL_Rect rect;
+    
     if (g->player.shot != NULL) {
         // Spieler Schuss
         
         // Umriss setzen
-        SDL_Rect rect;
         rect.x = g->player.shot->posx;
         rect.y = g->player.shot->posy;
         rect.w = PLAYER_SHOT_WIDTH;
@@ -384,17 +600,95 @@ void updateShots(Game *g)
         drawSprite(g->screen, &rect, "player_shot.bmp");
     }
     
-    // TODO
+    // durch Schüsse iterieren
     Shot *s = g->enemyShots;
     while (s != NULL) {
+        // Position einlesen
+        rect.x = s->posx;
+        rect.y = s->posy;
+        
+        if (s->type == 1) {
+            rect.w = ALIEN_1_SHOT_WIDTH;
+            rect.h = ALIEN_1_SHOT_HEIGHT;
+        } else if (s->type == 2) {
+            rect.w = ALIEN_2_SHOT_WIDTH;
+            rect.h = ALIEN_2_SHOT_HEIGHT;
+        } else if (s->type == 3) {
+            rect.w = ALIEN_3_SHOT_WIDTH;
+            rect.h = ALIEN_3_SHOT_HEIGHT;
+        }
+        
+        // Überschreiben
+        SDL_FillRect(g->screen, &rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+        
+        // Am Rand -> löschen
+        if (s->posy >= HEIGHT - BORDER) {
+            Shot *tmp = s;
+            if (s->prev == NULL) {
+                g->enemyShots = s->next;
+            } else {
+                s->prev->next = s->next;
+            }
+            if (s->next != NULL) {
+                s->next->prev = s->prev;
+            }
+            s = s->next;
+            free(tmp);
+            continue;
+        }
+        
+        // Neu Zeichnen
         if (s->type == 1) {
             s->posy += ALIEN_1_SHOT_SPEED;
+            rect.y = s->posy;
+            drawSprite(g->screen, &rect, "alien_shot_1.bmp");
         } else if (s->type == 2) {
             s->posy += ALIEN_2_SHOT_SPEED;
+            rect.y = s->posy;
+            drawSprite(g->screen, &rect, "alien_shot_2.bmp");
         } else if (s->type == 3) {
             s->posy += ALIEN_3_SHOT_SPEED;
+            rect.y = s->posy;
+            drawSprite(g->screen, &rect, "alien_shot_3.bmp");
         }
+        
         s = s->next;
+    }
+}
+
+
+void updateBlocks(Game *g)
+{
+    SDL_Rect rect;
+    rect.h = 20;
+    rect.w = 20;
+    for (int i = 0; i < 4; i++) {
+        for (int x = 0; x < 4; x++) {
+            for (int y = 0; y < 3; y++) {
+                rect.x = g->blocks[i].posx[x][y];
+                rect.y = g->blocks[i].posy[x][y];
+                
+                if (g->blocks[i].damage[x][y] < MAX_BLOCK_DAMAGE) {
+                    if (x == 0 && y == 0) {
+                        drawSprite(g->screen, &rect, "block_topleft.bmp");
+                    } else if (x == 3 && y == 0) {
+                        drawSprite(g->screen, &rect, "block_topright.bmp");
+                    } else if (x == 0 && y == 2) {
+                        drawSprite(g->screen, &rect, "block_bottomleft.bmp");
+                    } else if (x == 1 && y == 2) {
+                        drawSprite(g->screen, &rect, "block_bottommiddleleft.bmp");
+                    } else if (x == 2 && y == 2) {
+                        drawSprite(g->screen, &rect, "block_bottommiddleright.bmp");
+                    } else if (x == 3 && y == 2) {
+                        drawSprite(g->screen, &rect, "block_bottomright.bmp");
+                    } else {
+                        drawSprite(g->screen, &rect, "block_fill.bmp");
+                    }
+                } else {
+                    SDL_FillRect(g->screen, &rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+                }
+            }
+        }
     }
 }
 
@@ -411,5 +705,37 @@ void shoot(Game *g)
         g->player.shot->next = NULL;
         g->player.shot->posy = g->player.rect.y;
         g->player.shot->posx = g->player.rect.x + PLAYER_WIDTH/2 - PLAYER_SHOT_WIDTH/2;
+    }
+}
+
+
+// entscheidet ob UFO erstellt oder aktualisert wird
+void ufo(Game *g)
+{
+    // 1:1 Chance nach MIN_UFO_PAUSE
+    if (!g->enemyContainer.ufo.alive && (MIN_UFO_PAUSE + g->enemyContainer.ufo.lastufo) < ms_time() && (rand() % 2)) {
+        g->enemyContainer.ufo.lastufo = ms_time();
+        g->enemyContainer.ufo.alive = true;
+        g->enemyContainer.ufo.posx = -UFO_WIDTH;
+        SDL_Rect rect = {g->enemyContainer.ufo.posx, BORDER_TOP + 5, UFO_WIDTH, UFO_HEIGHT};
+        drawSprite(g->screen, &rect, "ufo.bmp");
+    } else if (g->enemyContainer.ufo.alive) {
+        // UFO lebt noch, Position Aktualisieren
+        SDL_Rect rect = {g->enemyContainer.ufo.posx, BORDER_TOP + 5, UFO_WIDTH, UFO_HEIGHT};
+        SDL_FillRect(g->screen, &rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+        g->enemyContainer.ufo.posx += UFO_SPEED;
+        rect.x = g->enemyContainer.ufo.posx;
+        
+        if (g->enemyContainer.ufo.posx < WIDTH) {
+            // Zeichnen
+            drawSprite(g->screen, &rect, "ufo.bmp");
+        } else {
+            // Außerhalb
+            g->enemyContainer.ufo.lastufo = ms_time();
+            g->enemyContainer.ufo.alive = false;
+        }
+    } else if ((MIN_UFO_PAUSE + g->enemyContainer.ufo.lastufo) < ms_time()) {
+        // UFO Start verschieben
+        g->enemyContainer.ufo.lastufo += ((rand() % 11) * 1000);
     }
 }
