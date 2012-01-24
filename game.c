@@ -203,6 +203,7 @@ void alienShot(Game *g)
     Enemy *e;
     int ex;
     int ey;
+    int round = 0;
     
     // Zufälliges Alien auf unterster Stufe
     do {
@@ -217,10 +218,12 @@ void alienShot(Game *g)
                 break;
             }
         }
-    } while (ey == -1);
+        
+        round++;
+    } while (ey == -1 && round < 4);
     
     // noch ein Alien da
-    if (e != NULL) {
+    if (e != NULL && round < 4) {
         // Position berechen
         Shot *s = (Shot*) malloc(sizeof(Shot));
         s->posx = g->enemyContainer.posx + (ex * FIELD_WIDTH) + (ex * FIELD_MARGIN * 2) - FIELD_MARGIN + FIELD_WIDTH/2;
@@ -274,13 +277,13 @@ void initGame(Game *g)
     g->player.rect.w = PLAYER_WIDTH;
     g->player.rect.h = PLAYER_HEIGHT;
     
-    g->blocks = malloc(sizeof(Block) * 4);
-    for (int i = 0; i < 4; i++) {
-        for (int x = 0; x < 4; x++) {
-            for (int y = 0; y < 3; y++) {
+    g->blocks = malloc(sizeof(Block) * BLOCK_COUNT);
+    for (int i = 0; i < BLOCK_COUNT; i++) {
+        for (int x = 0; x < BLOCK_WIDTH/BLOCK_TILE_WIDTH; x++) {
+            for (int y = 0; y < BLOCK_HEIGHT/BLOCK_TILE_HEIGHT; y++) {
                 g->blocks[i].damage[x][y] = 0;
-                g->blocks[i].posx[x][y] = WIDTH/4 * i - 40 + x*20 + WIDTH/8;
-                g->blocks[i].posy[x][y] = PLAYER_Y_POS - 100 + y*20;
+                g->blocks[i].posx[x][y] = WIDTH/BLOCK_COUNT * i - BLOCK_WIDTH/2 + x*BLOCK_TILE_WIDTH + WIDTH/BLOCK_COUNT/2;
+                g->blocks[i].posy[x][y] = PLAYER_Y_POS - 100 + y*BLOCK_TILE_HEIGHT;
             }
         }
     }
@@ -350,6 +353,15 @@ void startNewLevel(Game *g)
 {
     g->level++;
     g->player.lives++;
+    
+    if (g->enemyShots != NULL) {
+        freeShotList(g->enemyShots);
+        g->enemyShots = NULL;
+    }
+    if (g->player.shot != NULL) {
+        free(g->player.shot);
+        g->player.shot = NULL;
+    }
     
     updateLives(g);
     
@@ -506,9 +518,9 @@ void checkCollision(Game *g)
         rect.h = 20;
         rect.w = 20;
         
-        for (int i = 0; i < 4; i++) {
-            for (int x = 0; x < 4; x++) {
-                for (int y = 0; y < 3; y++) {
+        for (int i = 0; i < BLOCK_COUNT; i++) {
+            for (int x = 0; x < BLOCK_WIDTH/BLOCK_TILE_WIDTH; x++) {
+                for (int y = 0; y < BLOCK_HEIGHT/BLOCK_TILE_HEIGHT; y++) {
                     rect.x = g->blocks[i].posx[x][y];
                     rect.y = g->blocks[i].posy[x][y];
                     
@@ -521,7 +533,6 @@ void checkCollision(Game *g)
                 }
             }
         }
-        
     }
     
     SDL_Rect s_rect;
@@ -550,9 +561,9 @@ void checkCollision(Game *g)
         rect.h = 20;
         rect.w = 20;
         
-        for (int i = 0; i < 4; i++) {
-            for (int x = 0; x < 4; x++) {
-                for (int y = 0; y < 3; y++) {
+        for (int i = 0; i < BLOCK_COUNT; i++) {
+            for (int x = 0; x < BLOCK_WIDTH/BLOCK_TILE_WIDTH; x++) {
+                for (int y = 0; y < BLOCK_HEIGHT/BLOCK_TILE_HEIGHT; y++) {
                     rect.x = g->blocks[i].posx[x][y];
                     rect.y = g->blocks[i].posy[x][y];
                     
@@ -680,9 +691,9 @@ void updateBlocks(Game *g)
     SDL_Rect rect;
     rect.h = 20;
     rect.w = 20;
-    for (int i = 0; i < 4; i++) {
-        for (int x = 0; x < 4; x++) {
-            for (int y = 0; y < 3; y++) {
+    for (int i = 0; i < BLOCK_COUNT; i++) {
+        for (int x = 0; x < BLOCK_WIDTH/BLOCK_TILE_WIDTH; x++) {
+            for (int y = 0; y < BLOCK_HEIGHT/BLOCK_TILE_HEIGHT; y++) {
                 rect.x = g->blocks[i].posx[x][y];
                 rect.y = g->blocks[i].posy[x][y];
                 

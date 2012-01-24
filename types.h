@@ -65,7 +65,13 @@
 #define UFO_UPDATE 50
 #define MIN_UFO_PAUSE 15000
 
+// Blöcke
 #define MAX_BLOCK_DAMAGE 4
+#define BLOCK_COUNT 5
+#define BLOCK_WIDTH 80
+#define BLOCK_HEIGHT 60
+#define BLOCK_TILE_WIDTH 20
+#define BLOCK_TILE_HEIGHT 20
 
 // Einstellungen Ende
 
@@ -96,9 +102,9 @@ typedef struct Shot {
 } Shot;
 
 typedef struct Block {
-    int damage[4][3];
-    int posx[4][3];
-    int posy[4][3];
+    int damage[BLOCK_WIDTH/BLOCK_TILE_WIDTH][BLOCK_HEIGHT/BLOCK_TILE_HEIGHT];
+    int posx[BLOCK_WIDTH/BLOCK_TILE_WIDTH][BLOCK_HEIGHT/BLOCK_TILE_HEIGHT];
+    int posy[BLOCK_WIDTH/BLOCK_TILE_WIDTH][BLOCK_HEIGHT/BLOCK_TILE_HEIGHT];
 } Block;
 
 typedef struct Player {

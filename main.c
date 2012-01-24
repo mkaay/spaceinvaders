@@ -8,6 +8,7 @@
 #include "helpers.h"
 #include "menu.h"
 #include "types.h"
+#include "highscore.h"
 
 int main(int argc, char *argv[])
 {
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
         // Escape gedrückt -> beenden
         // TODO: Menü aufrufen statt beenden
         if (keystates[SDLK_ESCAPE]) {
+            saveHighscore(g->score);
             quit = true;
         }
         
@@ -87,20 +89,20 @@ int main(int argc, char *argv[])
             ufo(g);
         }
         
+        // Schüsse aktualisieren
+        if (ms_time() - lastshotupdate >= SHOT_UPDATE) {
+            lastshotupdate = ms_time();
+            checkCollision(g);
+            updateShots(g);
+            movePlayer(g, None);
+        }
+        
         // Alienposition aktualisieren?
         // Exponentialfunktion, die Level und Alienanzahl berücksichtigt
         if (ms_time() - lastenemyupdate >= ENEMY_UPDATE_BASE * pow(0.95, g->level * 3 + (ENEMY_COUNT - g->enemyContainer.aliveCount) / 4)) {
             lastenemyupdate = ms_time();
             moveEnemys(g);
             alienShot(g);
-        }
-        
-        // Schüsse aktualisieren
-        if (ms_time() - lastshotupdate >= SHOT_UPDATE) {
-            lastshotupdate = ms_time();
-            updateShots(g);
-            checkCollision(g);
-            movePlayer(g, None);
         }
         
         usleep(20000); // begrenzt CPU Last
