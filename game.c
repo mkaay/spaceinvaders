@@ -72,6 +72,10 @@ void moveEnemys(Game *g)
     int dx = 0;
     int dy = 0;
     
+    SDL_Rect b_rect;
+    b_rect.h = 20;
+    b_rect.w = 20;
+    
     // Aktuelle Bewegungsrichtung abfragen und Positionsdelta berechnen
     if (g->enemyContainer.moveDirection == Right) {
         // Kollision mit Rand abfragen
@@ -142,6 +146,20 @@ void moveEnemys(Game *g)
             rect.y = g->enemyContainer.posy + (y * FIELD_HEIGHT) + (y * FIELD_MARGIN * 2) - FIELD_MARGIN;
             rect.w = FIELD_WIDTH;
             rect.h = FIELD_HEIGHT;
+            
+            for (int i = 0; i < BLOCK_COUNT; i++) {
+                for (int x = 0; x < BLOCK_WIDTH/BLOCK_TILE_WIDTH; x++) {
+                    for (int y = 0; y < BLOCK_HEIGHT/BLOCK_TILE_HEIGHT; y++) {
+                        b_rect.x = g->blocks[i].posx[x][y];
+                        b_rect.y = g->blocks[i].posy[x][y];
+                        
+                        if (collides(rect, b_rect) && g->blocks[i].damage[x][y] < MAX_BLOCK_DAMAGE) {
+                            g->blocks[i].damage[x][y] = MAX_BLOCK_DAMAGE;
+                            SDL_FillRect(g->screen, &b_rect, SDL_MapRGB(g->screen->format, 0, 0, 0));
+                        }
+                    }
+                }
+            }
             
             // Alientyp Abfrage
             if (g->enemyContainer.enemys[x][y].type == 1) {
@@ -593,8 +611,6 @@ void checkCollision(Game *g)
         block_loop_break:
         continue;
     }
-    
-    updateBlocks(g);
 }
 
 

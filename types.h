@@ -67,7 +67,7 @@
 
 // Blöcke
 #define MAX_BLOCK_DAMAGE 4
-#define BLOCK_COUNT 5
+#define BLOCK_COUNT 4
 #define BLOCK_WIDTH 80
 #define BLOCK_HEIGHT 60
 #define BLOCK_TILE_WIDTH 20

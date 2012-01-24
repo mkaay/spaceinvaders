@@ -3,6 +3,7 @@
 #include <math.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <time.h>
 
 #include "game.h"
 #include "helpers.h"
@@ -20,6 +21,8 @@ int main(int argc, char *argv[])
     long lastenemyupdate = ms_time();
     long lastshotupdate = ms_time();
     long lastufoupdate = ms_time();
+    
+    srand((unsigned int) time(NULL));
     
     // SDL initialisieren
     if (SDL_Init(SDL_INIT_VIDEO) == -1) {
@@ -89,20 +92,21 @@ int main(int argc, char *argv[])
             ufo(g);
         }
         
-        // Schüsse aktualisieren
-        if (ms_time() - lastshotupdate >= SHOT_UPDATE) {
-            lastshotupdate = ms_time();
-            checkCollision(g);
-            updateShots(g);
-            movePlayer(g, None);
-        }
-        
         // Alienposition aktualisieren?
         // Exponentialfunktion, die Level und Alienanzahl berücksichtigt
         if (ms_time() - lastenemyupdate >= ENEMY_UPDATE_BASE * pow(0.95, g->level * 3 + (ENEMY_COUNT - g->enemyContainer.aliveCount) / 4)) {
             lastenemyupdate = ms_time();
+            updateBlocks(g);
             moveEnemys(g);
             alienShot(g);
+        }
+        
+        // Schüsse aktualisieren
+        if (ms_time() - lastshotupdate >= SHOT_UPDATE) {
+            lastshotupdate = ms_time();
+            updateShots(g);
+            checkCollision(g);
+            movePlayer(g, None);
         }
         
         usleep(20000); // begrenzt CPU Last
